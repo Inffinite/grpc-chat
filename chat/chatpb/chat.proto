@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package chat;
+
+option go_package = "example.com/chatty/chat/chatpb;chatpb";
+
+message ChatMessage {
+  string room = 1;
+  string from = 2;
+  string text = 3;
+  int64  unix_ms = 4;
+}
+
+service ChatService {
+  rpc Chat(stream ChatMessage) returns (stream ChatMessage);
+}
