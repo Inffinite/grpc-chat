@@ -3,6 +3,7 @@ module example.com/chatty
 go 1.25.5
 
 require (
+	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 )
