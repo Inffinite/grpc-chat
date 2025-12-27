@@ -21,6 +21,206 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type RoomsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RoomsRequest) Reset() {
+	*x = RoomsRequest{}
+	mi := &file_chat_chatpb_chat_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RoomsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoomsRequest) ProtoMessage() {}
+
+func (x *RoomsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_chatpb_chat_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoomsRequest.ProtoReflect.Descriptor instead.
+func (*RoomsRequest) Descriptor() ([]byte, []int) {
+	return file_chat_chatpb_chat_proto_rawDescGZIP(), []int{0}
+}
+
+type RoomInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Room          string                 `protobuf:"bytes,1,opt,name=room,proto3" json:"room,omitempty"`
+	Clients       []string               `protobuf:"bytes,2,rep,name=clients,proto3" json:"clients,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RoomInfo) Reset() {
+	*x = RoomInfo{}
+	mi := &file_chat_chatpb_chat_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RoomInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoomInfo) ProtoMessage() {}
+
+func (x *RoomInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_chatpb_chat_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoomInfo.ProtoReflect.Descriptor instead.
+func (*RoomInfo) Descriptor() ([]byte, []int) {
+	return file_chat_chatpb_chat_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *RoomInfo) GetRoom() string {
+	if x != nil {
+		return x.Room
+	}
+	return ""
+}
+
+func (x *RoomInfo) GetClients() []string {
+	if x != nil {
+		return x.Clients
+	}
+	return nil
+}
+
+type RoomsSnapshot struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UnixMs        int64                  `protobuf:"varint,1,opt,name=unix_ms,json=unixMs,proto3" json:"unix_ms,omitempty"`
+	Rooms         []*RoomInfo            `protobuf:"bytes,2,rep,name=rooms,proto3" json:"rooms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RoomsSnapshot) Reset() {
+	*x = RoomsSnapshot{}
+	mi := &file_chat_chatpb_chat_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RoomsSnapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoomsSnapshot) ProtoMessage() {}
+
+func (x *RoomsSnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_chatpb_chat_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoomsSnapshot.ProtoReflect.Descriptor instead.
+func (*RoomsSnapshot) Descriptor() ([]byte, []int) {
+	return file_chat_chatpb_chat_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *RoomsSnapshot) GetUnixMs() int64 {
+	if x != nil {
+		return x.UnixMs
+	}
+	return 0
+}
+
+func (x *RoomsSnapshot) GetRooms() []*RoomInfo {
+	if x != nil {
+		return x.Rooms
+	}
+	return nil
+}
+
+type ChatStatsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Rooms         int64                  `protobuf:"varint,1,opt,name=rooms,proto3" json:"rooms,omitempty"`
+	Clients       int64                  `protobuf:"varint,2,opt,name=clients,proto3" json:"clients,omitempty"`
+	Allrooms      []int64                `protobuf:"varint,3,rep,packed,name=allrooms,proto3" json:"allrooms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChatStatsResponse) Reset() {
+	*x = ChatStatsResponse{}
+	mi := &file_chat_chatpb_chat_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChatStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChatStatsResponse) ProtoMessage() {}
+
+func (x *ChatStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_chatpb_chat_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChatStatsResponse.ProtoReflect.Descriptor instead.
+func (*ChatStatsResponse) Descriptor() ([]byte, []int) {
+	return file_chat_chatpb_chat_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ChatStatsResponse) GetRooms() int64 {
+	if x != nil {
+		return x.Rooms
+	}
+	return 0
+}
+
+func (x *ChatStatsResponse) GetClients() int64 {
+	if x != nil {
+		return x.Clients
+	}
+	return 0
+}
+
+func (x *ChatStatsResponse) GetAllrooms() []int64 {
+	if x != nil {
+		return x.Allrooms
+	}
+	return nil
+}
+
 type ChatMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Room          string                 `protobuf:"bytes,1,opt,name=room,proto3" json:"room,omitempty"`
@@ -33,7 +233,7 @@ type ChatMessage struct {
 
 func (x *ChatMessage) Reset() {
 	*x = ChatMessage{}
-	mi := &file_chat_chatpb_chat_proto_msgTypes[0]
+	mi := &file_chat_chatpb_chat_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +245,7 @@ func (x *ChatMessage) String() string {
 func (*ChatMessage) ProtoMessage() {}
 
 func (x *ChatMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_chat_chatpb_chat_proto_msgTypes[0]
+	mi := &file_chat_chatpb_chat_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +258,7 @@ func (x *ChatMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
 func (*ChatMessage) Descriptor() ([]byte, []int) {
-	return file_chat_chatpb_chat_proto_rawDescGZIP(), []int{0}
+	return file_chat_chatpb_chat_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ChatMessage) GetRoom() string {
@@ -93,14 +293,27 @@ var File_chat_chatpb_chat_proto protoreflect.FileDescriptor
 
 const file_chat_chatpb_chat_proto_rawDesc = "" +
 	"\n" +
-	"\x16chat/chatpb/chat.proto\x12\x04chat\"b\n" +
+	"\x16chat/chatpb/chat.proto\x12\x04chat\"\x0e\n" +
+	"\fRoomsRequest\"8\n" +
+	"\bRoomInfo\x12\x12\n" +
+	"\x04room\x18\x01 \x01(\tR\x04room\x12\x18\n" +
+	"\aclients\x18\x02 \x03(\tR\aclients\"N\n" +
+	"\rRoomsSnapshot\x12\x17\n" +
+	"\aunix_ms\x18\x01 \x01(\x03R\x06unixMs\x12$\n" +
+	"\x05rooms\x18\x02 \x03(\v2\x0e.chat.RoomInfoR\x05rooms\"_\n" +
+	"\x11ChatStatsResponse\x12\x14\n" +
+	"\x05rooms\x18\x01 \x01(\x03R\x05rooms\x12\x18\n" +
+	"\aclients\x18\x02 \x01(\x03R\aclients\x12\x1a\n" +
+	"\ballrooms\x18\x03 \x03(\x03R\ballrooms\"b\n" +
 	"\vChatMessage\x12\x12\n" +
 	"\x04room\x18\x01 \x01(\tR\x04room\x12\x12\n" +
 	"\x04from\x18\x02 \x01(\tR\x04from\x12\x12\n" +
 	"\x04text\x18\x03 \x01(\tR\x04text\x12\x17\n" +
-	"\aunix_ms\x18\x04 \x01(\x03R\x06unixMs2?\n" +
+	"\aunix_ms\x18\x04 \x01(\x03R\x06unixMs2x\n" +
 	"\vChatService\x120\n" +
-	"\x04Chat\x12\x11.chat.ChatMessage\x1a\x11.chat.ChatMessage(\x010\x01B'Z%example.com/chatty/chat/chatpb;chatpbb\x06proto3"
+	"\x04Chat\x12\x11.chat.ChatMessage\x1a\x11.chat.ChatMessage(\x010\x01\x127\n" +
+	"\n" +
+	"WatchRooms\x12\x12.chat.RoomsRequest\x1a\x13.chat.RoomsSnapshot0\x01B'Z%example.com/chatty/chat/chatpb;chatpbb\x06proto3"
 
 var (
 	file_chat_chatpb_chat_proto_rawDescOnce sync.Once
@@ -114,18 +327,25 @@ func file_chat_chatpb_chat_proto_rawDescGZIP() []byte {
 	return file_chat_chatpb_chat_proto_rawDescData
 }
 
-var file_chat_chatpb_chat_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_chat_chatpb_chat_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_chat_chatpb_chat_proto_goTypes = []any{
-	(*ChatMessage)(nil), // 0: chat.ChatMessage
+	(*RoomsRequest)(nil),      // 0: chat.RoomsRequest
+	(*RoomInfo)(nil),          // 1: chat.RoomInfo
+	(*RoomsSnapshot)(nil),     // 2: chat.RoomsSnapshot
+	(*ChatStatsResponse)(nil), // 3: chat.ChatStatsResponse
+	(*ChatMessage)(nil),       // 4: chat.ChatMessage
 }
 var file_chat_chatpb_chat_proto_depIdxs = []int32{
-	0, // 0: chat.ChatService.Chat:input_type -> chat.ChatMessage
-	0, // 1: chat.ChatService.Chat:output_type -> chat.ChatMessage
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: chat.RoomsSnapshot.rooms:type_name -> chat.RoomInfo
+	4, // 1: chat.ChatService.Chat:input_type -> chat.ChatMessage
+	0, // 2: chat.ChatService.WatchRooms:input_type -> chat.RoomsRequest
+	4, // 3: chat.ChatService.Chat:output_type -> chat.ChatMessage
+	2, // 4: chat.ChatService.WatchRooms:output_type -> chat.RoomsSnapshot
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_chat_chatpb_chat_proto_init() }
@@ -139,7 +359,7 @@ func file_chat_chatpb_chat_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chat_chatpb_chat_proto_rawDesc), len(file_chat_chatpb_chat_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

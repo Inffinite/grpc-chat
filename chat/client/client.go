@@ -8,6 +8,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"sort"
+	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -33,61 +36,141 @@ func main() {
 	defer conn.Close()
 
 	c := pb.NewChatServiceClient(conn)
-	ctx := context.Background()
 
-	stream, err := c.Chat(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	chatStream, err := c.Chat(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Send join message first.
-	if err := stream.Send(&pb.ChatMessage{
-		Room:   *room,
-		From:   *name,
-		Text:   "",
-		UnixMs: time.Now().UnixMilli(),
+	// You can omit UnixMs, the server overwrites it anyway.
+	if err := chatStream.Send(&pb.ChatMessage{
+		Room: *room,
+		From: *name,
+		Text: "",
 	}); err != nil {
 		log.Fatal(err)
 	}
 
-	// Receiver goroutine.
+	var printMu sync.Mutex
+	safePrintf := func(format string, args ...any) {
+		printMu.Lock()
+		defer printMu.Unlock()
+		fmt.Printf(format, args...)
+	}
+
+	// Start WatchRooms stream for live stats.
 	go func() {
+		statsStream, err := c.WatchRooms(ctx, &pb.RoomsRequest{})
+		if err != nil {
+			safePrintf("[stats] watch error: %v\n", err)
+			return
+		}
+
 		for {
-			in, err := stream.Recv()
+			snap, err := statsStream.Recv()
 			if err == io.EOF {
 				return
 			}
 			if err != nil {
-				log.Printf("recv error: %v", err)
+				safePrintf("[stats] recv error: %v\n", err)
 				return
 			}
-			if in.GetFrom() == *name && in.GetText() == "" {
-				continue
-			}
-			if in.GetText() == "" {
-				fmt.Printf("[%s] %s\n", in.GetRoom(), in.GetFrom())
-				continue
-			}
-			fmt.Printf("[%s] %s: %s\n", in.GetRoom(), in.GetFrom(), in.GetText())
+
+			printRoomsSnapshot(safePrintf, snap)
 		}
 	}()
 
-	fmt.Println("type messages then press enter. type /quit to exit")
+	// Receiver goroutine for chat.
+	go func() {
+		for {
+			in, err := chatStream.Recv()
+			if err == io.EOF {
+				return
+			}
+			if err != nil {
+				safePrintf("recv error: %v\n", err)
+				return
+			}
+
+			// Skip the empty join echo from yourself if your server ever echoes it.
+			if in.GetFrom() == *name && in.GetText() == "" {
+				continue
+			}
+
+			if in.GetText() == "" {
+				safePrintf("[%s] %s\n", in.GetRoom(), in.GetFrom())
+				continue
+			}
+			safePrintf("[%s] %s: %s\n", in.GetRoom(), in.GetFrom(), in.GetText())
+		}
+	}()
+
+	safePrintf("type messages then press enter. type /quit to exit\n")
 
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {
 		line := sc.Text()
 		if line == "/quit" {
-			_ = stream.CloseSend()
+			_ = chatStream.CloseSend()
+			cancel()
 			return
 		}
-		if err := stream.Send(&pb.ChatMessage{
+
+		if err := chatStream.Send(&pb.ChatMessage{
 			Room: *room,
 			From: *name,
 			Text: line,
 		}); err != nil {
-			log.Printf("send error: %v", err)
+			safePrintf("send error: %v\n", err)
+			cancel()
 			return
 		}
 	}
+}
+
+func printRoomsSnapshot(printf func(string, ...any), snap *pb.RoomsSnapshot) {
+	rooms := snap.GetRooms()
+
+	// Build a stable, sorted view.
+	type roomView struct {
+		name    string
+		clients []string
+	}
+	views := make([]roomView, 0, len(rooms))
+
+	totalClients := 0
+	for _, r := range rooms {
+		names := append([]string(nil), r.GetClients()...)
+		sort.Strings(names)
+		totalClients += len(names)
+		views = append(views, roomView{name: r.GetRoom(), clients: names})
+	}
+	sort.Slice(views, func(i, j int) bool { return views[i].name < views[j].name })
+
+	// Timestamp.
+	t := "--:--:--"
+	if snap.GetUnixMs() > 0 {
+		ts := time.UnixMilli(snap.GetUnixMs()).Local()
+		t = ts.Format("15:04:05")
+	}
+
+	printf("\n[stats %s] active rooms=%d active clients=%d\n", t, len(views), totalClients)
+	if len(views) == 0 {
+		printf("[stats] no active rooms\n")
+		printf("\n")
+		return
+	}
+
+	for _, v := range views {
+		if len(v.clients) == 0 {
+			printf("[stats] %s: (no clients)\n", v.name)
+			continue
+		}
+		printf("[stats] %s: %s\n", v.name, strings.Join(v.clients, ", "))
+	}
+	printf("\n")
 }

@@ -30,16 +30,20 @@ type server struct {
 
 	mu    sync.Mutex
 	rooms map[string]*roomState
+
+	// watchers for WatchRooms
+	nextWatcherID int
+	watchers      map[int]chan *pb.RoomsSnapshot
 }
 
 func newServer() *server {
 	return &server{
-		rooms: map[string]*roomState{},
+		rooms:    map[string]*roomState{},
+		watchers: map[int]chan *pb.RoomsSnapshot{},
 	}
 }
 
 func (s *server) Chat(stream pb.ChatService_ChatServer) error {
-	// First message is treated as join info.
 	first, err := stream.Recv()
 	if err != nil {
 		return err
@@ -62,9 +66,12 @@ func (s *server) Chat(stream pb.ChatService_ChatServer) error {
 	}
 
 	s.addClient(c)
-	defer s.removeClient(c)
+	s.notifyRoomsChanged() // NEW
+	defer func() {
+		s.removeClient(c)
+		s.notifyRoomsChanged() // NEW
+	}()
 
-	// Start sender loop.
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -75,7 +82,6 @@ func (s *server) Chat(stream pb.ChatService_ChatServer) error {
 		}
 	}()
 
-	// Broadcast join info.
 	s.broadcast(c.room, &pb.ChatMessage{
 		Room:   c.room,
 		From:   "server",
@@ -83,7 +89,6 @@ func (s *server) Chat(stream pb.ChatService_ChatServer) error {
 		UnixMs: time.Now().UnixMilli(),
 	}, nil)
 
-	// Receive loop.
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {
@@ -100,7 +105,6 @@ func (s *server) Chat(stream pb.ChatService_ChatServer) error {
 		}
 		msg.UnixMs = time.Now().UnixMilli()
 
-		// Enforce 2 client chat. If more than 2 are in room, reject message.
 		if s.roomSize(c.room) > 2 {
 			c.send <- &pb.ChatMessage{
 				Room:   c.room,
@@ -111,11 +115,9 @@ func (s *server) Chat(stream pb.ChatService_ChatServer) error {
 			continue
 		}
 
-		// Relay to everyone else in the room.
 		s.broadcast(c.room, msg, c)
 	}
 
-	// Stop sender.
 	s.broadcast(c.room, &pb.ChatMessage{
 		Room:   c.room,
 		From:   "server",
@@ -155,7 +157,6 @@ func (s *server) removeClient(c *client) {
 }
 
 func (s *server) closeClient(c *client) {
-	// Safe close.
 	defer func() { recover() }()
 	close(c.send)
 }
@@ -173,6 +174,10 @@ func (s *server) roomSize(room string) int {
 func (s *server) broadcast(room string, msg *pb.ChatMessage, exclude *client) {
 	s.mu.Lock()
 	rs := s.rooms[room]
+	if rs == nil {
+		s.mu.Unlock()
+		return
+	}
 	clients := make([]*client, 0, len(rs.clients))
 	for cl := range rs.clients {
 		if exclude != nil && cl == exclude {
@@ -186,8 +191,94 @@ func (s *server) broadcast(room string, msg *pb.ChatMessage, exclude *client) {
 		select {
 		case cl.send <- msg:
 		default:
-			// Drop if receiver is slow.
 		}
+	}
+}
+
+func (s *server) WatchRooms(req *pb.RoomsRequest, stream pb.ChatService_WatchRoomsServer) error {
+	ch, id := s.addWatcher()
+	defer s.removeWatcher(id)
+
+	// Send initial snapshot immediately.
+	if err := stream.Send(s.buildRoomsSnapshot()); err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		case snap, ok := <-ch:
+			if !ok {
+				return nil
+			}
+			if err := stream.Send(snap); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (s *server) addWatcher() (chan *pb.RoomsSnapshot, int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.nextWatcherID++
+	id := s.nextWatcherID
+	ch := make(chan *pb.RoomsSnapshot, 8)
+	s.watchers[id] = ch
+	return ch, id
+}
+
+func (s *server) removeWatcher(id int) {
+	s.mu.Lock()
+	ch := s.watchers[id]
+	delete(s.watchers, id)
+	s.mu.Unlock()
+
+	if ch != nil {
+		close(ch)
+	}
+}
+
+func (s *server) notifyRoomsChanged() {
+	snap := s.buildRoomsSnapshot()
+
+	s.mu.Lock()
+	watchers := make([]chan *pb.RoomsSnapshot, 0, len(s.watchers))
+	for _, ch := range s.watchers {
+		watchers = append(watchers, ch)
+	}
+	s.mu.Unlock()
+
+	for _, ch := range watchers {
+		select {
+		case ch <- snap:
+		default:
+			// Drop if watcher is slow.
+		}
+	}
+}
+
+func (s *server) buildRoomsSnapshot() *pb.RoomsSnapshot {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	rooms := make([]*pb.RoomInfo, 0, len(s.rooms))
+	for roomName, rs := range s.rooms {
+		names := make([]string, 0, len(rs.clients))
+		for c := range rs.clients {
+			names = append(names, c.name)
+		}
+		rooms = append(rooms, &pb.RoomInfo{
+			Room:    roomName,
+			Clients: names,
+		})
+	}
+
+	return &pb.RoomsSnapshot{
+		UnixMs: time.Now().UnixMilli(),
+		Rooms:  rooms,
 	}
 }
 

@@ -4,6 +4,25 @@ package chat;
 
 option go_package = "example.com/chatty/chat/chatpb;chatpb";
 
+message RoomsRequest {
+}
+
+message RoomInfo {
+  string room = 1;
+  repeated string clients = 2;
+}
+
+message RoomsSnapshot {
+  int64 unix_ms = 1;
+  repeated RoomInfo rooms = 2;
+}
+
+message ChatStatsResponse {
+  int64 rooms = 1;
+  int64 clients = 2;
+  repeated int64 allrooms = 3;
+}
+
 message ChatMessage {
   string room = 1;
   string from = 2;
@@ -13,4 +32,5 @@ message ChatMessage {
 
 service ChatService {
   rpc Chat(stream ChatMessage) returns (stream ChatMessage);
+  rpc WatchRooms(RoomsRequest) returns (stream RoomsSnapshot);
 }

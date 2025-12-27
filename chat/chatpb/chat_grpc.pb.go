@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ChatService_Chat_FullMethodName = "/chat.ChatService/Chat"
+	ChatService_Chat_FullMethodName       = "/chat.ChatService/Chat"
+	ChatService_WatchRooms_FullMethodName = "/chat.ChatService/WatchRooms"
 )
 
 // ChatServiceClient is the client API for ChatService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatServiceClient interface {
 	Chat(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ChatMessage, ChatMessage], error)
+	WatchRooms(ctx context.Context, in *RoomsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RoomsSnapshot], error)
 }
 
 type chatServiceClient struct {
@@ -50,11 +52,31 @@ func (c *chatServiceClient) Chat(ctx context.Context, opts ...grpc.CallOption) (
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ChatService_ChatClient = grpc.BidiStreamingClient[ChatMessage, ChatMessage]
 
+func (c *chatServiceClient) WatchRooms(ctx context.Context, in *RoomsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RoomsSnapshot], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[1], ChatService_WatchRooms_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[RoomsRequest, RoomsSnapshot]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ChatService_WatchRoomsClient = grpc.ServerStreamingClient[RoomsSnapshot]
+
 // ChatServiceServer is the server API for ChatService service.
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility.
 type ChatServiceServer interface {
 	Chat(grpc.BidiStreamingServer[ChatMessage, ChatMessage]) error
+	WatchRooms(*RoomsRequest, grpc.ServerStreamingServer[RoomsSnapshot]) error
 	mustEmbedUnimplementedChatServiceServer()
 }
 
@@ -67,6 +89,9 @@ type UnimplementedChatServiceServer struct{}
 
 func (UnimplementedChatServiceServer) Chat(grpc.BidiStreamingServer[ChatMessage, ChatMessage]) error {
 	return status.Error(codes.Unimplemented, "method Chat not implemented")
+}
+func (UnimplementedChatServiceServer) WatchRooms(*RoomsRequest, grpc.ServerStreamingServer[RoomsSnapshot]) error {
+	return status.Error(codes.Unimplemented, "method WatchRooms not implemented")
 }
 func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
 func (UnimplementedChatServiceServer) testEmbeddedByValue()                     {}
@@ -96,6 +121,17 @@ func _ChatService_Chat_Handler(srv interface{}, stream grpc.ServerStream) error 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type ChatService_ChatServer = grpc.BidiStreamingServer[ChatMessage, ChatMessage]
 
+func _ChatService_WatchRooms_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(RoomsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChatServiceServer).WatchRooms(m, &grpc.GenericServerStream[RoomsRequest, RoomsSnapshot]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ChatService_WatchRoomsServer = grpc.ServerStreamingServer[RoomsSnapshot]
+
 // ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -109,6 +145,11 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _ChatService_Chat_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "WatchRooms",
+			Handler:       _ChatService_WatchRooms_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "chat/chatpb/chat.proto",
